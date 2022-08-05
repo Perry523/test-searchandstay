@@ -1,19 +1,19 @@
 <template>
   <div class="d-flex flex-column items-center justify-content-center vh-100">
-    <b-form @submit.prevent="login" class="form-container">
+    <b-form class="form-container" @submit.prevent="login">
       <nuxt-logo class="mb-5"></nuxt-logo>
       <b-form-group>
         <b-form-input
-          required
           v-model="user.email"
+          required
           type="text"
           placeholder="Username"
         />
       </b-form-group>
       <b-form-group>
         <b-form-input
-          required
           v-model="user.password"
+          required
           type="password"
           placeholder="Password"
         />

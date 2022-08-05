@@ -41,6 +41,9 @@ export default {
     '@nuxtjs/toast',
     '@nuxtjs/auth-next',
   ],
+  bootstrapVue: {
+    icons: true,
+  },
   toast: {
     position: 'top-center',
     duration: 2000,
