@@ -1,6 +1,12 @@
 <template>
   <b-container>
-    <div class="d-flex justify-content-end mb-3 mt-5">
+    <div class="d-flex justify-content-between mb-3 mt-5">
+      <b-pagination
+        v-model="pagination.current_page"
+        :total-rows="pagination.total"
+        :per-page="pagination.per_page"
+        @change="getEntities"
+      />
       <b-button pill variant="outline-primary" @click="entityModal = true">
         <b-icon icon="plus"></b-icon>
         Add new
@@ -97,6 +103,7 @@ export default {
   data() {
     return {
       entities: [],
+      pagination: {},
       newEntity: {
         bg_color: '',
         text_color: '',
@@ -119,12 +126,18 @@ export default {
     this.getEntities()
   },
   methods: {
-    async getEntities() {
+    async getEntities(page = 1) {
       try {
-        const { data } = await this.$axios.$get('/calendar_patterns')
+        const { data } = await this.$axios.$get('/calendar_patterns', {
+          params: {
+            page,
+          },
+        })
         this.entities = data.entities
+        this.pagination = data.pagination
       } catch (error) {
         this.$toast.error(error.response.data.errors.message)
+        this.$auth.logout()
         // this.entities = payload.data.entities
       }
     },
@@ -173,6 +186,9 @@ export default {
       }
       this.isEdit = false
       this.isShow = false
+    },
+    onPageChange(page) {
+      this.getEntities(page)
     },
   },
 }
