@@ -38,6 +38,7 @@
           <b-input-group>
             <b-form-input
               v-model="newEntity.bg_color"
+              v-validate="'length:7'"
               :disabled="isShow"
               placeholder="#ffffff"
             />
@@ -52,6 +53,7 @@
           <b-input-group>
             <b-form-input
               v-model="newEntity.text_color"
+              v-validate="'length:7'"
               :disabled="isShow"
               placeholder="#000000"
             ></b-form-input>
@@ -72,10 +74,19 @@
         </b-form-checkbox>
       </div>
       <template #modal-footer>
-        <b-button variant="secondary" @click="entityModal = false">
+        <b-button
+          :disabled="loading"
+          variant="secondary"
+          @click="entityModal = false"
+        >
           {{ isShow ? 'Close' : 'Cancel' }}
         </b-button>
-        <b-button v-if="!isShow" variant="primary" @click="saveEntity">
+        <b-button
+          v-if="!isShow"
+          variant="primary"
+          :disabled="loading"
+          @click="saveEntity"
+        >
           Create
         </b-button>
       </template>
@@ -88,12 +99,19 @@
         <p>Are you sure you want to delete entity {{ newEntity.id }}?</p>
       </div>
       <template #modal-footer>
-        <b-button variant="secondary" @click="confirmDelete = false">
+        <b-button
+          :disabled="loading"
+          variant="secondary"
+          @click="confirmDelete = false"
+        >
           Cancel
         </b-button>
-        <b-button variant="primary" @click="deleteEntity"> Delete </b-button>
+        <b-button :disabled="loading" variant="primary" @click="deleteEntity">
+          Delete
+        </b-button>
       </template>
     </b-modal>
+    <b-overlay :show="loading" no-wrap> </b-overlay>
   </b-container>
 </template>
 
@@ -105,14 +123,15 @@ export default {
       entities: [],
       pagination: {},
       newEntity: {
-        bg_color: '',
-        text_color: '',
+        bg_color: '#',
+        text_color: '#',
         active: 1,
       },
       entityModal: false,
       isEdit: false,
       isShow: false,
       confirmDelete: false,
+      loading: false,
     }
   },
   watch: {
@@ -127,6 +146,7 @@ export default {
   },
   methods: {
     async getEntities(page = 1) {
+      this.loading = true
       try {
         const { data } = await this.$axios.$get('/calendar_patterns', {
           params: {
@@ -136,14 +156,15 @@ export default {
         this.entities = data.entities
         this.pagination = data.pagination
       } catch (error) {
-        this.$toast.error(error.response.data.errors.message)
+        this.$toast.error(error.response?.data?.errors?.message)
         this.$auth.logout()
         // this.entities = payload.data.entities
       }
+      this.loading = false
     },
     editEntity(entity) {
       this.newEntity = Object.assign({}, entity)
-      this.newEntity.active = this.newEntity.active ? 1 : 0
+      this.newEntity.active = !!this.newEntity.active
       this.isEdit = true
       this.entityModal = true
     },
@@ -151,6 +172,7 @@ export default {
       const payload = {
         calendar_patterns: this.newEntity,
       }
+      this.loading = true
       this.newEntity.active = this.newEntity.active ? 1 : 0
       if (this.isEdit) {
         await this.$axios.$put(
@@ -181,8 +203,8 @@ export default {
     },
     clearModal() {
       this.newEntity = {
-        bg_color: '',
-        text_color: '',
+        bg_color: '#',
+        text_color: '#',
       }
       this.isEdit = false
       this.isShow = false

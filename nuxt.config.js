@@ -21,8 +21,10 @@ export default {
   css: [],
 
   // Plugins to run before rendering page: https://go.nuxtjs.dev/config-plugins
-  plugins: [{ src: '~/plugins/vuex-persist.js', mode: 'client' }],
-  
+  plugins: [
+    { src: '~/plugins/vuex-persist.js', mode: 'client' },
+  ],
+
   // Auto import components: https://go.nuxtjs.dev/config-components
   components: true,
 
@@ -34,9 +36,7 @@ export default {
 
   // Modules: https://go.nuxtjs.dev/config-modules
   modules: [
-    // https://go.nuxtjs.dev/bootstrap
     'bootstrap-vue/nuxt',
-    // https://go.nuxtjs.dev/axios
     '@nuxtjs/axios',
     '@nuxtjs/toast',
     '@nuxtjs/auth-next',
