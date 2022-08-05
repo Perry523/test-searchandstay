@@ -1,10 +1,9 @@
 <template>
-  <div class="d-flex border container-size px-1">
-    <div
-      :style="`background: ${color}`"
-      class="color-box border"
-    ></div>
-    {{ color }}
+  <div class="d-flex container-size px-1" :class="!onlyColor ? 'border' : ''">
+    <div :style="`background: ${color}`" class="color-box border"></div>
+    <div v-if="!onlyColor">
+      {{ color }}
+    </div>
   </div>
 </template>
 
@@ -14,6 +13,10 @@ export default {
     color: {
       type: String,
       required: true,
+    },
+    onlyColor: {
+      type: Boolean,
+      default: false,
     },
   },
 }

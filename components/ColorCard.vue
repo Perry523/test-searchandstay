@@ -1,13 +1,32 @@
 <template>
   <b-card class="shadow">
     <b-card-title>
-      <b-row class="justify-content-between px-2">
+      <b-row class="justify-content-between pl-2">
         <div>Id: {{ entity.id }}</div>
-        <b-icon
-          class="cursor-pointer"
-          icon="pencil-square"
-          @click="$emit('edit', entity)"
-        ></b-icon>
+        <b-dropdown
+          dropright
+          style="margin-top: -8px"
+          variant="link-dark"
+          class="text-decoration-none"
+          toggle-class="text-decoration-none"
+          no-caret
+        >
+          <template #button-content>
+            <b-icon
+              class="cursor-pointer cursor-decoration-none"
+              icon="three-dots-vertical"
+            ></b-icon>
+          </template>
+          <b-dropdown-item class="py-1" @click="$emit('show', entity)">
+            <b-icon icon="search" class="mr-1" />Show details</b-dropdown-item
+          >
+          <b-dropdown-item class="py-1" @click="$emit('edit', entity)"
+            ><b-icon icon="pencil-square" class="mr-1" />Edit</b-dropdown-item
+          >
+          <b-dropdown-item class="py-1" @click="$emit('delete', entity)"
+            ><b-icon icon="trash" class="mr-1" />Remove</b-dropdown-item
+          >
+        </b-dropdown>
       </b-row>
     </b-card-title>
     <b-card-text>
@@ -21,20 +40,11 @@
         <div class="ellipsis">Text color:</div>
         <color-box :color="entity.text_color" />
       </b-row>
-      <div class="d-flex justify-content-between align-items-center mt-3">
-        <b-icon
-          @click="$emit('delete', entity)"
-          class="cursor-pointer"
-          scale="1.5"
-          variant="danger"
-          icon="trash"
-        ></b-icon>
-        <div
-          class="text-left font-weight-bold"
-          :class="entity.active ? 'text-success' : 'text-danger'"
-        >
-          {{ entity.active ? 'Active' : 'Inactive' }}
-        </div>
+      <div
+        class="text-center font-weight-bold mt-3"
+        :class="entity.active ? 'text-success' : 'text-danger'"
+      >
+        {{ entity.active ? 'Active' : 'Inactive' }}
       </div>
     </b-card-text>
   </b-card>

@@ -1,7 +1,7 @@
 <template>
   <b-container>
     <div class="d-flex justify-content-end mb-3 mt-5">
-      <b-button pill variant="outline-primary" @click="colorModal = true">
+      <b-button pill variant="outline-primary" @click="entityModal = true">
         <b-icon icon="plus"></b-icon>
         Add new
       </b-button>
@@ -14,36 +14,64 @@
       >
         <color-card
           :entity="entity"
-          @edit="editColor"
+          @edit="editEntity"
           @delete="handleDelete"
+          @show="handleShow"
         />
       </div>
     </div>
-    <b-modal v-model="colorModal">
+    <b-modal v-model="entityModal">
       <template #modal-title>
-        <h5>
+        <h5 v-if="isShow">Entity {{ newEntity.id }}</h5>
+        <h5 v-else>
           {{ isEdit ? 'Edit' : 'Create' }} entity {{ newEntity.id || '' }}
         </h5>
       </template>
       <div>
         <b-form-group label="Background Color">
-          <b-form-input v-model="newEntity.bg_color" placeholder="#ffffff" />
+          <b-input-group>
+            <b-form-input
+              v-model="newEntity.bg_color"
+              :disabled="isShow"
+              placeholder="#ffffff"
+            />
+            <template #append>
+              <b-input-group-text style="width: 50px">
+                <color-box :color="newEntity.bg_color" only-color />
+              </b-input-group-text>
+            </template>
+          </b-input-group>
         </b-form-group>
         <b-form-group label="Text color">
-          <b-form-input
-            v-model="newEntity.text_color"
-            placeholder="#000000"
-          ></b-form-input>
+          <b-input-group>
+            <b-form-input
+              v-model="newEntity.text_color"
+              :disabled="isShow"
+              placeholder="#000000"
+            ></b-form-input>
+            <template #append>
+              <b-input-group-text style="width: 50px">
+                <color-box :color="newEntity.text_color" only-color />
+              </b-input-group-text>
+            </template>
+          </b-input-group>
         </b-form-group>
-        <b-form-checkbox v-model="newEntity.active" name="check-button" switch>
+        <b-form-checkbox
+          v-model="newEntity.active"
+          :disabled="isShow"
+          name="check-button"
+          switch
+        >
           Is active
         </b-form-checkbox>
       </div>
       <template #modal-footer>
-        <b-button variant="secondary" @click="colorModal = false">
-          Cancel
+        <b-button variant="secondary" @click="entityModal = false">
+          {{ isShow ? 'Close' : 'Cancel' }}
         </b-button>
-        <b-button variant="primary" @click="saveColor"> Create </b-button>
+        <b-button v-if="!isShow" variant="primary" @click="saveEntity">
+          Create
+        </b-button>
       </template>
     </b-modal>
     <b-modal v-model="confirmDelete">
@@ -57,44 +85,13 @@
         <b-button variant="secondary" @click="confirmDelete = false">
           Cancel
         </b-button>
-        <b-button variant="primary" @click="deleteColor"> Delete </b-button>
+        <b-button variant="primary" @click="deleteEntity"> Delete </b-button>
       </template>
     </b-modal>
   </b-container>
 </template>
 
 <script>
-const payload = {
-  success: true,
-  data: {
-    pagination: {
-      total: 2,
-      count: 2,
-      per_page: 10,
-      current_page: 1,
-      total_pages: 1,
-      links: {
-        next: null,
-        prev: null,
-      },
-    },
-    entities: [
-      {
-        id: 1,
-        bg_color: '#ff0000',
-        text_color: '#000000',
-        active: 1,
-      },
-      {
-        id: 2,
-        bg_color: '#00ff00',
-        text_color: '#000000',
-        active: 1,
-      },
-    ],
-  },
-  message: 'Entities retrieved successfully.',
-}
 export default {
   name: 'IndexPage',
   data() {
@@ -105,13 +102,14 @@ export default {
         text_color: '',
         active: 1,
       },
-      colorModal: false,
+      entityModal: false,
       isEdit: false,
-      confirmDelete: false, 
+      isShow: false,
+      confirmDelete: false,
     }
   },
   watch: {
-    colorModal(val) {
+    entityModal(val) {
       if (!val) {
         this.clearModal()
       }
@@ -126,36 +124,46 @@ export default {
         const { data } = await this.$axios.$get('/calendar_patterns')
         this.entities = data.entities
       } catch (error) {
-        // this.$toast.error(error.response.data.errors.message)
-        this.entities = payload.data.entities
+        this.$toast.error(error.response.data.errors.message)
+        // this.entities = payload.data.entities
       }
     },
-    editColor(entity) {
+    editEntity(entity) {
       this.newEntity = Object.assign({}, entity)
-      this.newEntity.active = !!entity.active
+      this.newEntity.active = this.newEntity.active ? 1 : 0
       this.isEdit = true
-      this.colorModal = true
+      this.entityModal = true
     },
-    saveColor() {
+    async saveEntity() {
+      const payload = {
+        calendar_patterns: this.newEntity,
+      }
+      this.newEntity.active = this.newEntity.active ? 1 : 0
       if (this.isEdit) {
-        this.$axios.$put(
+        await this.$axios.$put(
           `/calendar_patterns/${this.newEntity.id}`,
-          this.newEntity
+          payload
         )
       } else {
-        this.$axios.$post('/calendar_patterns', this.newEntity)
+        await this.$axios.$post('/calendar_patterns', payload)
       }
-      this.colorModal = false
+      this.entityModal = false
       this.getEntities()
     },
-    deleteColor() {
-      this.$axios.$delete(`/calendar_patterns/${this.newEntity.id}`)
+    async handleShow(entity) {
+      const { data } = await this.$axios.$get(`/calendar_patterns/${entity.id}`)
+      this.newEntity = Object.assign({}, data)
+      this.newEntity.active = !!entity.active
+      this.isShow = true
+      this.entityModal = true
+    },
+    async deleteEntity() {
+      await this.$axios.$delete(`/calendar_patterns/${this.newEntity.id}`)
       this.confirmDelete = false
       this.getEntities()
     },
     handleDelete(entity) {
       this.newEntity = Object.assign({}, entity)
-      console.log('a')
       this.confirmDelete = true
     },
     clearModal() {
@@ -164,6 +172,7 @@ export default {
         text_color: '',
       }
       this.isEdit = false
+      this.isShow = false
     },
   },
 }
