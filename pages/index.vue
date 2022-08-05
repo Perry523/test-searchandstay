@@ -42,12 +42,16 @@
               :disabled="isShow"
               placeholder="#ffffff"
             />
+
             <template #append>
               <b-input-group-text style="width: 50px">
                 <color-box :color="newEntity.bg_color" only-color />
               </b-input-group-text>
             </template>
           </b-input-group>
+          <sub v-if="submited && errors.bg_color" class="text-danger">
+            Background must be a valid hex color
+          </sub>
         </b-form-group>
         <b-form-group label="Text color">
           <b-input-group>
@@ -57,12 +61,16 @@
               :disabled="isShow"
               placeholder="#000000"
             ></b-form-input>
+
             <template #append>
               <b-input-group-text style="width: 50px">
                 <color-box :color="newEntity.text_color" only-color />
               </b-input-group-text>
             </template>
           </b-input-group>
+          <sub v-if="submited && errors.text_color" class="text-danger">
+            Text must be a valid hex color
+          </sub>
         </b-form-group>
         <b-form-checkbox
           v-model="newEntity.active"
@@ -132,6 +140,11 @@ export default {
       isShow: false,
       confirmDelete: false,
       loading: false,
+      errors: {
+        bg_color: null,
+        text_color: null,
+      },
+      submited: false,
     }
   },
   watch: {
@@ -169,6 +182,12 @@ export default {
       this.entityModal = true
     },
     async saveEntity() {
+      this.submited = true
+      this.errors = {}
+      this.validateSubmit()
+      if (this.errors.bg_color || this.errors.text_color) {
+        return
+      }
       const payload = {
         calendar_patterns: this.newEntity,
       }
@@ -183,7 +202,19 @@ export default {
         await this.$axios.$post('/calendar_patterns', payload)
       }
       this.entityModal = false
+      this.submited = false
       this.getEntities()
+    },
+    validateSubmit() {
+      if (!this.isValidHexColor(this.newEntity.bg_color)) {
+        this.errors.bg_color = true
+      }
+      if (!this.isValidHexColor(this.newEntity.text_color)) {
+        this.errors.text_color = true
+      }
+    },
+    isValidHexColor(color) {
+      return /(^#[0-9A-F]{6}$)|(^#[0-9A-F]{3}$)/i.test(color)
     },
     async handleShow(entity) {
       const { data } = await this.$axios.$get(`/calendar_patterns/${entity.id}`)
@@ -208,6 +239,10 @@ export default {
       }
       this.isEdit = false
       this.isShow = false
+      this.errors = {
+        bg_color: null,
+        text_color: null,
+      }
     },
     onPageChange(page) {
       this.getEntities(page)
