@@ -1,6 +1,12 @@
 <template>
   <b-container>
-    <div class="d-flex justify-content-end mb-3 mt-5">
+    <div class="d-flex justify-content-between mb-3 mt-5">
+      <b-pagination
+        v-model="pagination.current_page"
+        :total-rows="pagination.total"
+        :per-page="pagination.per_page"
+        @change="getEntities"
+      />
       <b-button pill variant="outline-primary" @click="entityModal = true">
         <b-icon icon="plus"></b-icon>
         Add new
@@ -32,29 +38,39 @@
           <b-input-group>
             <b-form-input
               v-model="newEntity.bg_color"
+              v-validate="'length:7'"
               :disabled="isShow"
               placeholder="#ffffff"
             />
+
             <template #append>
               <b-input-group-text style="width: 50px">
                 <color-box :color="newEntity.bg_color" only-color />
               </b-input-group-text>
             </template>
           </b-input-group>
+          <sub v-if="submited && errors.bg_color" class="text-danger">
+            Background must be a valid hex color
+          </sub>
         </b-form-group>
         <b-form-group label="Text color">
           <b-input-group>
             <b-form-input
               v-model="newEntity.text_color"
+              v-validate="'length:7'"
               :disabled="isShow"
               placeholder="#000000"
             ></b-form-input>
+
             <template #append>
               <b-input-group-text style="width: 50px">
                 <color-box :color="newEntity.text_color" only-color />
               </b-input-group-text>
             </template>
           </b-input-group>
+          <sub v-if="submited && errors.text_color" class="text-danger">
+            Text must be a valid hex color
+          </sub>
         </b-form-group>
         <b-form-checkbox
           v-model="newEntity.active"
@@ -66,10 +82,19 @@
         </b-form-checkbox>
       </div>
       <template #modal-footer>
-        <b-button variant="secondary" @click="entityModal = false">
+        <b-button
+          :disabled="loading"
+          variant="secondary"
+          @click="entityModal = false"
+        >
           {{ isShow ? 'Close' : 'Cancel' }}
         </b-button>
-        <b-button v-if="!isShow" variant="primary" @click="saveEntity">
+        <b-button
+          v-if="!isShow"
+          variant="primary"
+          :disabled="loading"
+          @click="saveEntity"
+        >
           Create
         </b-button>
       </template>
@@ -82,12 +107,19 @@
         <p>Are you sure you want to delete entity {{ newEntity.id }}?</p>
       </div>
       <template #modal-footer>
-        <b-button variant="secondary" @click="confirmDelete = false">
+        <b-button
+          :disabled="loading"
+          variant="secondary"
+          @click="confirmDelete = false"
+        >
           Cancel
         </b-button>
-        <b-button variant="primary" @click="deleteEntity"> Delete </b-button>
+        <b-button :disabled="loading" variant="primary" @click="deleteEntity">
+          Delete
+        </b-button>
       </template>
     </b-modal>
+    <b-overlay :show="loading" no-wrap> </b-overlay>
   </b-container>
 </template>
 
@@ -97,15 +129,22 @@ export default {
   data() {
     return {
       entities: [],
+      pagination: {},
       newEntity: {
-        bg_color: '',
-        text_color: '',
+        bg_color: '#',
+        text_color: '#',
         active: 1,
       },
       entityModal: false,
       isEdit: false,
       isShow: false,
       confirmDelete: false,
+      loading: false,
+      errors: {
+        bg_color: null,
+        text_color: null,
+      },
+      submited: false,
     }
   },
   watch: {
@@ -119,25 +158,40 @@ export default {
     this.getEntities()
   },
   methods: {
-    async getEntities() {
+    async getEntities(page = 1) {
+      this.loading = true
       try {
-        const { data } = await this.$axios.$get('/calendar_patterns')
+        const { data } = await this.$axios.$get('/calendar_patterns', {
+          params: {
+            page,
+          },
+        })
         this.entities = data.entities
+        this.pagination = data.pagination
       } catch (error) {
-        this.$toast.error(error.response.data.errors.message)
+        this.$toast.error(error.response?.data?.errors?.message)
+        this.$auth.logout()
         // this.entities = payload.data.entities
       }
+      this.loading = false
     },
     editEntity(entity) {
       this.newEntity = Object.assign({}, entity)
-      this.newEntity.active = this.newEntity.active ? 1 : 0
+      this.newEntity.active = !!this.newEntity.active
       this.isEdit = true
       this.entityModal = true
     },
     async saveEntity() {
+      this.submited = true
+      this.errors = {}
+      this.validateSubmit()
+      if (this.errors.bg_color || this.errors.text_color) {
+        return
+      }
       const payload = {
         calendar_patterns: this.newEntity,
       }
+      this.loading = true
       this.newEntity.active = this.newEntity.active ? 1 : 0
       if (this.isEdit) {
         await this.$axios.$put(
@@ -148,7 +202,19 @@ export default {
         await this.$axios.$post('/calendar_patterns', payload)
       }
       this.entityModal = false
+      this.submited = false
       this.getEntities()
+    },
+    validateSubmit() {
+      if (!this.isValidHexColor(this.newEntity.bg_color)) {
+        this.errors.bg_color = true
+      }
+      if (!this.isValidHexColor(this.newEntity.text_color)) {
+        this.errors.text_color = true
+      }
+    },
+    isValidHexColor(color) {
+      return /(^#[0-9A-F]{6}$)|(^#[0-9A-F]{3}$)/i.test(color)
     },
     async handleShow(entity) {
       const { data } = await this.$axios.$get(`/calendar_patterns/${entity.id}`)
@@ -168,11 +234,18 @@ export default {
     },
     clearModal() {
       this.newEntity = {
-        bg_color: '',
-        text_color: '',
+        bg_color: '#',
+        text_color: '#',
       }
       this.isEdit = false
       this.isShow = false
+      this.errors = {
+        bg_color: null,
+        text_color: null,
+      }
+    },
+    onPageChange(page) {
+      this.getEntities(page)
     },
   },
 }
