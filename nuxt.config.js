@@ -21,7 +21,9 @@ export default {
   css: [],
 
   // Plugins to run before rendering page: https://go.nuxtjs.dev/config-plugins
-  plugins: [],
+  plugins: [
+    { src: '~/plugins/vuex-persist.js', mode: 'client' },
+  ],
 
   // Auto import components: https://go.nuxtjs.dev/config-components
   components: true,
@@ -34,13 +36,14 @@ export default {
 
   // Modules: https://go.nuxtjs.dev/config-modules
   modules: [
-    // https://go.nuxtjs.dev/bootstrap
     'bootstrap-vue/nuxt',
-    // https://go.nuxtjs.dev/axios
     '@nuxtjs/axios',
     '@nuxtjs/toast',
     '@nuxtjs/auth-next',
   ],
+  bootstrapVue: {
+    icons: true,
+  },
   toast: {
     position: 'top-center',
     duration: 2000,
@@ -59,11 +62,12 @@ export default {
         token: {
           property: 'data.result.access_token',
           required: true,
-          type: 'bearer',
+          type: 'Bearer',
         },
         endpoints: {
           login: { url: '/login_json', method: 'post' },
           user: false,
+          logout: false,
         },
       },
     },
